@@ -1,0 +1,138 @@
+PEM deployment
+
+create a pull secret:
+
+create a configmap:
+
+create a secret from app-secret.yaml file
+
+create 2 secrets from dbtruststore.jks file and metl-keystore.jks
+
+create a service account ----   fedex-pem-sa
+
+
+
+::::::::::::::::::::::yaml file :::::::::::::::::::::::::::::::::::::::::::::
+
+image
+tag
+configmap: cm name
+logs --- enable true
+migrator : migrator
+dbsetup: enable true
+
+---------under DATABASE AND SSL PROPERTIES ----
+db_type: DB2
+ssl_connection: true
+
+db_port:	
+db_host:     								
+db_name:									------------->>(for this give schema name and user as PP  create a schema and user with name of pemPP)
+db_schema: PEMDEVPP
+db_user:
+db_password:    ibm-pem-secret --------->> this is the secret name which is created from app-secret.yaml file
+db_driver: com.ibm.db2.jcc.DB2Driver
+
+
+db_sslTrustStoreName: dbtruststore.jks
+
+db_sslTrustStoresecret: dbtruststore.jks
+db_sslTrustStorePassword: ibm-pem-secret
+
+
+testmode_db_port:
+testmode_db_host:
+testmode_db_name:               ==============>> for this give schema name and user as PR   create a schema and user with name of pemPR
+testmode_db_schema:
+testmode_db_user:
+testmode_db_password:
+
+testmode_db_sslTrustStoreName:  dbtruststore.jks
+testmode_db_sslTrustStoresecret: dbtruststore.jks
+testmode_db_sslTrustStorePassword: ibm-pem-secret
+
+=====================================
+
+pem::::::::::
+
+enable: true
+hostname: pem-nonprod.fdx-nonprod-metl-cluster-c8f3f6cfbb0cdb5823c0b6637406824e-i000.us-east.containers.appdomain.cloud  ---.. in this till pem-nonprod you can give anything after that give the cluster url from .fdx to till cloud.
+
+
+under setupfile:--------
+
+keystore_password: ibm-pem-secret
+keystore_alias: metlkeystore
+keystore_filename: metl-keystore.jks
+
+PP:--------------------------------------
+
+enable: true
+hostname:  pp.nonprod.fdx-nonprod-metl-cluster-c8f3f6cfbb0cdb5823c0b6637406824e-i000.us-east.containers.appdomain.cloud
+termination: passthrough
+
+keystore_password: ibm-pem-secret
+keystore_alias: metlkeystore
+keystore_filename: metl-keystore.jks
+
+remote_server_host: fedexpem-pp-jms-service.fedexpem-nonprod.svc.cluster.local  -----not changed
+
+================================================================
+
+PR:---------------------------
+enable: true
+
+hostname: same as PP but keet PR instead of PP
+termination: passthrough
+
+=======================================
+
+apiGateway:
+enable: true
+hostname: apigateway-nonprod-metl-cluster-c8f3f6cfbb0cdb5823c0b6637406824e-i000.us-east.containers.appdomain.cloud
+termination:
+keystore_password: ibm-pem-secret
+keystore_alias: metlkeystore
+keystore_filename: metl-k
+eystore.jks
+===============================================
+
+helm install <release name>  -f <values.yml> ./path --debug --timeout 3200s
+ex: helm install fedexnppem -f values-pem-nprod.yaml --debug --timeout 7200s
+
+
+
+"make communitymanager  false"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

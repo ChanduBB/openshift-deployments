@@ -1,0 +1,150 @@
+1. Check the image name and the tag with the latest namespace and the repository.
+--------------------------------------------------------------------------------------------
+
+Pull the image to the local machine.
+Tag the image with the existing tag.
+Now push the image to the registry.
+
+----> You can perform the tasks by the below commands:
+     --------------------------------------------------
+	 
+1. Pull the image from registry
+
+     docker pull us.icr.io/<My_namespace>/<my_repo>:<my_tag>
+
+2. Tag an image to point to this registry. Choose a local image, target namespace, and target repository and an optional tag.
+
+     docker tag <local_image> us.icr.io/<my_namespace>/<my_repo>:<my_tag>
+	 
+3.  Push the tagged image.	
+
+     docker push us.icr.io/<my_namespace>/<my_repo>:<my_tag> 
+	 
+	 
+	 
+echo "Getting tls certificates from openshift" 
+oc get secret fdx-nonprod-metl-cluster-c8f3f6cfbb0cdb5823c0b6637406824e-i000 -n openshift-ingress -o jsonpath="{.data['tls\.key']}" | base64 -d > tls.key 
+oc get secret $secret -n openshift-ingress -o jsonpath="{.data['tls\.crt']}" | base64 -d > tls.crt 
+echo "creating jks" openssl pkcs12 -export -out metl-keystore.pfx -inkey tls.key -in tls.crt -passout pass:Expl0re 
+keytool -importkeystore -srckeystore metl-keystore.pfx -srcstorepass Expl0re -srcalias 1 -srcstoretype pkcs12 -destkeystore metl-keystore.jks -deststorepass Expl0re -destalias metlkeystore -deststoretype JKS
+
+
+keytool -import -alias DBCERT -file DigiCertGlobalRootCA.crt -keystore proddbtruststore.jks Expl0re   ---> 2nd jks
+
+
+
+---------> use the same metl-keystore.jks of the SI and copy to the PEM charts.
+
+
+
+1. check the image: 
+====================
+
+Tag the image and push to the registry.
+
+2. Pull secret:
+==============
+pem-cr-secret
+
+prod metl docker registry creds ---->   oc create secret docker-registry pem-cr-secret --docker-server=us.icr.io --docker-username=iamapikey --docker-password=9G-FOmu7XT-FEgVmGluFuzyxWOVyJtCxZ5FZYp4kz4VP 
+
+
+3. Service account:
+-----------------------
+oc create sa fdx-b2bi-sa
+
+
+4. create CM
+-----------------------
+
+  oc create configmap pem-prod-config --from-file=/etc/localtime
+
+resources: false
+
+
+Logs : enabled - true
+
+storageclass: px-sharedv4-sc
+
+5. DB setup:
+     enabled: true      (First time installation)
+	 upgrade: false
+	 
+	 
+6: create truststore.jks 
+-----------------
+
+keytool -import -alias DBCERT -file DigiCertGlobalRootCA.crt -keystore proddbtruststore.jks 
+
+
+oc create secret generic dbtruststore-secret --from-file=dbtruststore.jks
+
+------------>   We need two jks files for PEM installation because we use two schemas and each schema will have individual .jks files and secrets with it.
+
+------------>    And we have to provide the secret name for any password columns which is obtained from the app-secrets.yaml file.
+
+
+------------>     oc apply -f app-secret.yaml 
+
+7:  DB details:
+-------------------
+Update the two schema details in the yaml file.
+
+
+DB name: BLUDB
+DB Port: 31589
+DB IP: 166.9.20.140
+DB USER:
+DB Secret: It should be created from app-secrets.yml file
+DB HOST: b7ce1edf-f4fc-4914-a36f-586031a805e0.bs2ipa7w0uv9tsomi9ig.private.databases.appdomain.cloud
+DB Driver: com.ibm.db2.jcc.DB2Driver
+
+
+db schema: pemprod        pemtest
+db schema password:  UHJhZ21hQDEyMzQ1Njc4OQ==       Pragma@123456789
+
+
+8. Now place the PEM stanza that
+---------------------------------
+
+     enable: true
+
+
+9: now create a secret with metl-keystore.jks
+--------------------------------------------
+
+10. At the PR place the hostname of the cluster.
+------------------------------------------------
+
+11. Purge will be false.
+----------------------------
+
+12. now hit the helm install command
+--------------------------------------
+
+helm install <release name>  -f <values.yml> ./path --debug --timeout 3200s
+
+
+
+
+
+
+IMP:-  Do not give any value in keystore section Gateway Part. Keep it False and donot give any values.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

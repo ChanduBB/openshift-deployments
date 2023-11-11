@@ -1,0 +1,277 @@
+
+SI Prequsites:
+----------------
+
+1.--------->  First get the images:
+
+
+1. Pull the image from registry
+
+     docker pull us.icr.io/<My_namespace>/<my_repo>:<my_tag>
+
+2. Tag an image to point to this registry. Choose a local image, target namespace, and target repository and an optional tag.
+
+     docker tag <local_image> us.icr.io/<my_namespace>/<my_repo>:<my_tag>
+	 
+3.  Push the tagged image.	
+
+     docker push us.icr.io/<my_namespace>/<my_repo>:<my_tag> 
+
+
+us.icr.io/edimftnonprod/b2bi@sha256:c43d1aa2da17439f794d5d7ab1ee248eab11982958379fce9d1f9d326c890f49       6.1.2.0
+
+us.icr.io/metlprod/b2bi@sha256:c43d1aa2da17439f794d5d7ab1ee248eab11982958379fce9d1f9d326c890f49       6.1.2.0
+
+us.icr.io/edimftnonprod/b2bi@sha256:1e10476cf7fbd7bbbc26ff0b9068d9644a4a744c1f4765d4849c10a8f8ac77b6
+
+us.icr.io/edimftnonprod/b2bi-dbsetup@sha256:8aad2ecbf40f04e38f217b773dbac0aca5bcca83b14c91965dd5c7624bd64952  6.1.2.0
+
+
+Repository                              TAG            Image ID
+
+us.icr.io/metlprod/b2bi                6.1.2.0     ac1c2419abd6 
+
+us.icr.io/metlprod/b2bi-purge          6.1.2.0     717a2923b2a7
+
+us.icr.io/metlprod/b2bi-dbsetup        6.1.2.0     b2ce865560e6
+
+--------------------------------------------------------
+Demo of image pulling, pushing, tagging:
+------------------------------------------------------
+
+docker pull us.icr.io/edimftnonprod/b2bi-purge:6.1.2.0
+
+docker tag us.icr.io/edimftnonprod/b2bi-purge:6.1.2.0 us.icr.io/metlprod/b2bi-purge:6.1.2.0
+
+docker push us.icr.io/metlprod/b2bi-purge:6.1.2.0
+
+
+
+----->   For every image we need to create a pull secret.
+
+
+
+
+2. ---------------> Pull secret:
+-----------------------------------------------
+
+POC Docker registry creds ---->  oc create secret docker-registry fdx-cr-secret --docker-server=us.icr.io --docker-username=iamapikey --docker-password=mduBF1C5xs66oRhftoACZt6_4dcbpJR1hYjbuw7D6HkY
+
+prod metl docker registry creds ---->   oc create secret docker-registry fedex-cr-secret --docker-server=us.icr.io --docker-username=iamapikey --docker-password=9G-FOmu7XT-FEgVmGluFuzyxWOVyJtCxZ5FZYp4kz4VP 
+
+
+3. ---------------------->  service account
+--------------------------------------------------------------------
+oc create sa fdx-b2bi-sa
+
+4. -----------------------> storage class
+------------------------------------------------------
+
+px-sharedv4-sc
+
+5. ------------------------> DB details
+---------------------------------------------------------------------
+
+database name : bludb
+
+b2bicore   UHJhZ21hQDEyMzQ1Njc4OQo=    Pragma@123456789
+
+DB HOST:   166.9.20.140     46d92b8f-81e6-4c61-bb2b-a6f9e67170b5.bs2ipa7w0uv9tsomi9ig.private.databases.appdomain.cloud
+DB Port:   30172
+
+
+6. Metl prod cluster Ingress:
+---------------------------------------------------------------------
+
+fdx-prodution-metl-cluste-c8f3f6cfbb0cdb5823c0b6637406824e-i000
+
+router-default ------------>       fdx-prodution-metl-cluste-c8f3f6cfbb0cdb5823c0b6637406824e-i000.us-east.containers.appdomain.cloud
+
+
+7.  To create tls.key and tls.crt for metl prod cluster:
+----------------------------------------------------------------
+
+
+oc get secret fdx-prodution-metl-cluste-c8f3f6cfbb0cdb5823c0b6637406824e-i000 -n openshift-ingress -o jsonpath="{.data['tls\.key']}" | base64 -d > tls.key
+
+oc get secret fdx-prodution-metl-cluste-c8f3f6cfbb0cdb5823c0b6637406824e-i000 -n openshift-ingress -o jsonpath="{.data['tls\.crt']}" | base64 -d > tls.crt
+
+
+tls.cert ----
+---------
+
+
+-----BEGIN CERTIFICATE-----
+MIIGTzCCBTegAwIBAgISBOSHndzrpCNJ5RLIBLuidNQTMA0GCSqGSIb3DQEBCwUA
+MDIxCzAJBgNVBAYTAlVTMRYwFAYDVQQKEw1MZXQncyBFbmNyeXB0MQswCQYDVQQD
+EwJSMzAeFw0yMzAyMDExMzMyNTJaFw0yMzA1MDIxMzMyNTFaMEcxRTBDBgNVBAMT
+PGZkeC1wcm9kdXRpb24tbWV0bC1jbHVzdGUudXMtZWFzdC5jb250YWluZXJzLmFw
+cGRvbWFpbi5jbG91ZDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAP3m
+fFoZkSAcCI/lZii38ww4CVJmap5tIAFKK4I2gbeO+PbldKk9PE0/FN1EdqL4FnNO
+UyX/wa1usdy3yJ7ceu7T+g7CER4XFsf21XkTHUJUvt4uh1fCYPLPXuGygfIYOWxq
+pjy7VPcsCs80b4C66zpnqsF9niiw/SLeWyGUA8um+Zy1RrL8FRwcIScCNDAE+qK8
+1CRnDDVlJ7LIDxJXAqRB+khHVzJfZtzfSLY1f25+5SSK1BFD3n/a21l1e1FvXD6G
+FdHWCclEsDpDS7dek6Hvws2yTluedq+WfRamayr6V1mtNwhusbB8xvCQQant/Cco
+jj8AopyBwrWAhMMxwC8CAwEAAaOCA0gwggNEMA4GA1UdDwEB/wQEAwIFoDAdBgNV
+HSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwDAYDVR0TAQH/BAIwADAdBgNVHQ4E
+FgQUSvFeCjKQGVRx+MIb116GgaMD1yQwHwYDVR0jBBgwFoAUFC6zF7dYVsuuUAlA
+5h+vnYsUwsYwVQYIKwYBBQUHAQEESTBHMCEGCCsGAQUFBzABhhVodHRwOi8vcjMu
+by5sZW5jci5vcmcwIgYIKwYBBQUHMAKGFmh0dHA6Ly9yMy5pLmxlbmNyLm9yZy8w
+ggEVBgNVHREEggEMMIIBCIJkKi5mZHgtcHJvZHV0aW9uLW1ldGwtY2x1c3RlLWM4
+ZjNmNmNmYmIwY2RiNTgyM2MwYjY2Mzc0MDY4MjRlLWkwMDAudXMtZWFzdC5jb250
+YWluZXJzLmFwcGRvbWFpbi5jbG91ZIJiZmR4LXByb2R1dGlvbi1tZXRsLWNsdXN0
+ZS1jOGYzZjZjZmJiMGNkYjU4MjNjMGI2NjM3NDA2ODI0ZS1pMDAwLnVzLWVhc3Qu
+Y29udGFpbmVycy5hcHBkb21haW4uY2xvdWSCPGZkeC1wcm9kdXRpb24tbWV0bC1j
+bHVzdGUudXMtZWFzdC5jb250YWluZXJzLmFwcGRvbWFpbi5jbG91ZDBMBgNVHSAE
+RTBDMAgGBmeBDAECATA3BgsrBgEEAYLfEwEBATAoMCYGCCsGAQUFBwIBFhpodHRw
+Oi8vY3BzLmxldHNlbmNyeXB0Lm9yZzCCAQUGCisGAQQB1nkCBAIEgfYEgfMA8QB2
+ALc++yTfnE26dfI5xbpY9Gxd/ELPep81xJ4dCYEl7bSZAAABhg1lEdYAAAQDAEcw
+RQIgRYQb+f0VZWOTxQFp9id9ih0rvpJM8Z0qiNmaWIMe/QQCIQD0wLy3Wxm3zh/b
+TDz0gyM+gog0nwPd/vlN9s5/bcR/ywB3AHoyjFTYty22IOo44FIe6YQWcDIThU07
+0ivBOlejUutSAAABhg1lEegAAAQDAEgwRgIhAMW2lfkTcPMEvHfWWyPm8ZtmWiZQ
+9FAoJuvOhfPxfbWlAiEAr+6/rVAeaH+qH7B1niBXAPGe4d2jYrURPmBuJ/XiQ8Qw
+DQYJKoZIhvcNAQELBQADggEBAJFKsVcge9FKj3k0XlE3eoPKaYFhttWgaku9CXNe
+7mGDNP5cY/3UNAgD9GpyLVFnNbXpqxajjB1rA6JO+KeOpvNsxS98OZY62znoN9B5
+ceMFtNUzkbMOl/rMsM0SMFZgTpLNBwbssqFWJAXYWlm+2XQGsWBbqSXT+LFgex4v
+j3AqazVdwJl3xF2hFYhBS3zDuRPw1MpoX1/uAP4j0ciGgjKey7PU9K5ZMgqb5lz3
+31cda0g5vEDcjM2s+I92q4+sQ3QNfNs+pkdH1K1aNUe1DHdtpLiizHJjkhmoy1gg
+lrRaodacBLYr7Nj99nYbnnwZ3kxeoU+wG82ZgMJFHPzcrAM=
+-----END CERTIFICATE-----
+
+-----BEGIN CERTIFICATE-----
+MIIFFjCCAv6gAwIBAgIRAJErCErPDBinU/bWLiWnX1owDQYJKoZIhvcNAQELBQAw
+TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
+cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMjAwOTA0MDAwMDAw
+WhcNMjUwOTE1MTYwMDAwWjAyMQswCQYDVQQGEwJVUzEWMBQGA1UEChMNTGV0J3Mg
+RW5jcnlwdDELMAkGA1UEAxMCUjMwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK
+AoIBAQC7AhUozPaglNMPEuyNVZLD+ILxmaZ6QoinXSaqtSu5xUyxr45r+XXIo9cP
+R5QUVTVXjJ6oojkZ9YI8QqlObvU7wy7bjcCwXPNZOOftz2nwWgsbvsCUJCWH+jdx
+sxPnHKzhm+/b5DtFUkWWqcFTzjTIUu61ru2P3mBw4qVUq7ZtDpelQDRrK9O8Zutm
+NHz6a4uPVymZ+DAXXbpyb/uBxa3Shlg9F8fnCbvxK/eG3MHacV3URuPMrSXBiLxg
+Z3Vms/EY96Jc5lP/Ooi2R6X/ExjqmAl3P51T+c8B5fWmcBcUr2Ok/5mzk53cU6cG
+/kiFHaFpriV1uxPMUgP17VGhi9sVAgMBAAGjggEIMIIBBDAOBgNVHQ8BAf8EBAMC
+AYYwHQYDVR0lBBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMBMBIGA1UdEwEB/wQIMAYB
+Af8CAQAwHQYDVR0OBBYEFBQusxe3WFbLrlAJQOYfr52LFMLGMB8GA1UdIwQYMBaA
+FHm0WeZ7tuXkAXOACIjIGlj26ZtuMDIGCCsGAQUFBwEBBCYwJDAiBggrBgEFBQcw
+AoYWaHR0cDovL3gxLmkubGVuY3Iub3JnLzAnBgNVHR8EIDAeMBygGqAYhhZodHRw
+Oi8veDEuYy5sZW5jci5vcmcvMCIGA1UdIAQbMBkwCAYGZ4EMAQIBMA0GCysGAQQB
+gt8TAQEBMA0GCSqGSIb3DQEBCwUAA4ICAQCFyk5HPqP3hUSFvNVneLKYY611TR6W
+PTNlclQtgaDqw+34IL9fzLdwALduO/ZelN7kIJ+m74uyA+eitRY8kc607TkC53wl
+ikfmZW4/RvTZ8M6UK+5UzhK8jCdLuMGYL6KvzXGRSgi3yLgjewQtCPkIVz6D2QQz
+CkcheAmCJ8MqyJu5zlzyZMjAvnnAT45tRAxekrsu94sQ4egdRCnbWSDtY7kh+BIm
+lJNXoB1lBMEKIq4QDUOXoRgffuDghje1WrG9ML+Hbisq/yFOGwXD9RiX8F6sw6W4
+avAuvDszue5L3sz85K+EC4Y/wFVDNvZo4TYXao6Z0f+lQKc0t8DQYzk1OXVu8rp2
+yJMC6alLbBfODALZvYH7n7do1AZls4I9d1P4jnkDrQoxB3UqQ9hVl3LEKQ73xF1O
+yK5GhDDX8oVfGKF5u+decIsH4YaTw7mP3GFxJSqv3+0lUFJoi5Lc5da149p90Ids
+hCExroL1+7mryIkXPeFM5TgO9r0rvZaBFOvV2z0gp35Z0+L4WPlbuEjN/lxPFin+
+HlUjr8gRsI3qfJOQFy/9rKIJR0Y/8Omwt/8oTWgy1mdeHmmjk7j1nYsvC9JSQ6Zv
+MldlTTKB3zhThV1+XWYp6rjd5JW1zbVWEkLNxE7GJThEUG3szgBVGP7pSWTUTsqX
+nLRbwHOoq7hHwg==
+-----END CERTIFICATE-----
+
+-----BEGIN CERTIFICATE-----
+MIIFYDCCBEigAwIBAgIQQAF3ITfU6UK47naqPGQKtzANBgkqhkiG9w0BAQsFADA/
+MSQwIgYDVQQKExtEaWdpdGFsIFNpZ25hdHVyZSBUcnVzdCBDby4xFzAVBgNVBAMT
+DkRTVCBSb290IENBIFgzMB4XDTIxMDEyMDE5MTQwM1oXDTI0MDkzMDE4MTQwM1ow
+TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
+cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwggIiMA0GCSqGSIb3DQEB
+AQUAA4ICDwAwggIKAoICAQCt6CRz9BQ385ueK1coHIe+3LffOJCMbjzmV6B493XC
+ov71am72AE8o295ohmxEk7axY/0UEmu/H9LqMZshftEzPLpI9d1537O4/xLxIZpL
+wYqGcWlKZmZsj348cL+tKSIG8+TA5oCu4kuPt5l+lAOf00eXfJlII1PoOK5PCm+D
+LtFJV4yAdLbaL9A4jXsDcCEbdfIwPPqPrt3aY6vrFk/CjhFLfs8L6P+1dy70sntK
+4EwSJQxwjQMpoOFTJOwT2e4ZvxCzSow/iaNhUd6shweU9GNx7C7ib1uYgeGJXDR5
+bHbvO5BieebbpJovJsXQEOEO3tkQjhb7t/eo98flAgeYjzYIlefiN5YNNnWe+w5y
+sR2bvAP5SQXYgd0FtCrWQemsAXaVCg/Y39W9Eh81LygXbNKYwagJZHduRze6zqxZ
+Xmidf3LWicUGQSk+WT7dJvUkyRGnWqNMQB9GoZm1pzpRboY7nn1ypxIFeFntPlF4
+FQsDj43QLwWyPntKHEtzBRL8xurgUBN8Q5N0s8p0544fAQjQMNRbcTa0B7rBMDBc
+SLeCO5imfWCKoqMpgsy6vYMEG6KDA0Gh1gXxG8K28Kh8hjtGqEgqiNx2mna/H2ql
+PRmP6zjzZN7IKw0KKP/32+IVQtQi0Cdd4Xn+GOdwiK1O5tmLOsbdJ1Fu/7xk9TND
+TwIDAQABo4IBRjCCAUIwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAQYw
+SwYIKwYBBQUHAQEEPzA9MDsGCCsGAQUFBzAChi9odHRwOi8vYXBwcy5pZGVudHJ1
+c3QuY29tL3Jvb3RzL2RzdHJvb3RjYXgzLnA3YzAfBgNVHSMEGDAWgBTEp7Gkeyxx
++tvhS5B1/8QVYIWJEDBUBgNVHSAETTBLMAgGBmeBDAECATA/BgsrBgEEAYLfEwEB
+ATAwMC4GCCsGAQUFBwIBFiJodHRwOi8vY3BzLnJvb3QteDEubGV0c2VuY3J5cHQu
+b3JnMDwGA1UdHwQ1MDMwMaAvoC2GK2h0dHA6Ly9jcmwuaWRlbnRydXN0LmNvbS9E
+U1RST09UQ0FYM0NSTC5jcmwwHQYDVR0OBBYEFHm0WeZ7tuXkAXOACIjIGlj26Ztu
+MA0GCSqGSIb3DQEBCwUAA4IBAQAKcwBslm7/DlLQrt2M51oGrS+o44+/yQoDFVDC
+5WxCu2+b9LRPwkSICHXM6webFGJueN7sJ7o5XPWioW5WlHAQU7G75K/QosMrAdSW
+9MUgNTP52GE24HGNtLi1qoJFlcDyqSMo59ahy2cI2qBDLKobkx/J3vWraV0T9VuG
+WCLKTVXkcGdtwlfFRjlBz4pYg1htmf5X6DYO8A4jqv2Il9DjXA6USbW1FzXSLr9O
+he8Y4IWS6wY7bCkjCWDcRQJMEhg76fsO3txE+FiYruq9RUWhiF1myv4Q6W+CyBFC
+Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
+-----END CERTIFICATE-----
+
+
+
+tls.key ----->
+--------------
+
+
+-----BEGIN RSA PRIVATE KEY-----
+MIIEowIBAAKCAQEA/eZ8WhmRIBwIj+VmKLfzDDgJUmZqnm0gAUorgjaBt4749uV0
+qT08TT8U3UR2ovgWc05TJf/BrW6x3LfIntx67tP6DsIRHhcWx/bVeRMdQlS+3i6H
+V8Jg8s9e4bKB8hg5bGqmPLtU9ywKzzRvgLrrOmeqwX2eKLD9It5bIZQDy6b5nLVG
+svwVHBwhJwI0MAT6orzUJGcMNWUnssgPElcCpEH6SEdXMl9m3N9ItjV/bn7lJIrU
+EUPef9rbWXV7UW9cPoYV0dYJyUSwOkNLt16Toe/CzbJOW552r5Z9FqZrKvpXWa03
+CG6xsHzG8JBBqe38JyiOPwCinIHCtYCEwzHALwIDAQABAoIBAQDdubo+tLUX5WNU
+xnBAfuOxd/4sB2R0lbetaKg2PoNpWWHxus/2O5O9oakG0hMInr58U5opRQBOBK0u
+oxCAKurwRg3JdZCdRmyOk/A4m4ihtIA6Z0eqTAV+BbpGPy1bzevX0gr6Xl4EvGF0
+McZuFM33YzCraJgF0Qo+uQ+8cxYdcSagTEoh0X6oufUz7xk7/oEOJu+dwucTvF8W
+dgAb8TZQUrAQVIhgbdMqCwAhpqTcG2mmCo4ofDLi5272l1JJFn7dy0/V9GUaa3Wp
+VJQf7QEzpTZuEptuJ6984dO4YcBsd2av7BN50VUCWHSqSsSyd41l9qhg6aAKG6+Z
+4xwMpzkBAoGBAP344JlO8CmPe+PlHVSr0RJ8jJ6XGacZVsOUGgjTz0A9yGyPNaoL
+V2SRbN0d0vyGUfOGWJdyoC8XHsq4jXUC727ZFKK9bmuqlG/HlrPdybZ1IPR2kbMl
+2onaC5UdCbYHngmlyfD1NPwPe9N9WB5GCjUpZnulHF1jJdLnc3dSjbfHAoGBAP/t
+dikRwzRcNQoGHX8QcS67A8Z09TN7p/bSgh+kcA9mpjXlInS8AkR10tlTE4rWti+p
+RUFUYG6AKbMGpf+4dALrTVFv2aXtFs8P74VdehekukraxdCrDUsRucfd5AWWw+uf
+DI2wS+SiBFrao1onAHoQ/elFt+TOBpV18C8UBERZAoGAbswXt+pPLeJx6w82R40Z
+jdYWRs2mnFaamoJPBVDaVq1ddbbYc5G1E6O5+ZEcTZyPvgz7Mz8HkOOmRExVMhoQ
+uKwtq3224XOuhEFvhpKYgGgC84OStrQp7f/ZE7lyVh5mnNDeE6f18I0UuUQyoCpw
+I5cnJYP3puotQyBEKGc0elsCgYBWOGrpdSl9d18LDHpdd22aH7kq3/ZHrO4uUkcy
+X9S864kteQ99omVlKQiq3LkluiZQskc5tjJyp8zkmmXMXBkBbsJyoCsEInbftW+t
+T4u1cXKtizy/ixEEbGlZc2DBnUROGhxBk9ZNpWOwNB56Xc9kUFsqfqlwdRR0v/H1
++llhqQKBgAi3ygdS6tXk68PrGKQHTYk66ErY2c3kgCMC68MyEnTN/Yd+8z7ZrEb1
+0DQdPfLnyT5kksAJtX9tSOM6Fs3ue7bAF9KOCqXj+qpIt0tR+KSBw2/clfi6Ehmm
+qYKD1qaORNd+tPzHIHndzVG0U53nYIe36EQw+lmiiYcLp7a+eWiR
+-----END RSA PRIVATE KEY-----
+
+
+
+
+8.  Create a dbtruststore secret from dbtruststore.jks file
+=================================================================
+
+
+
+
+Optional ----->  openssl pkcs12 -export -out b2bcore-keystore.pfx -inkey tls.key -in tls.crt -passout pass:Expl0re ---->.pfx
+
+
+optional ----->  keytool -importkeystore -srckeystore b2bcore-keystore.pfx -srcstorepass Expl0re -srcalias 1 -srcstoretype pkcs12 -destkeystore b2bcore-keystore.jks -deststorepass Expl0re -destalias b2bcorekeystore -deststoretype JKS
+
+
+
+oc create  secret generic b2bcore-jms-truststore-secret --from-file= proddbtruststore.jks
+
+
+
+------> To create a JKS file  
+
+keytool -import -alias DBCERT -file DigiCertGlobalRootCA.crt -keystore proddbtruststore.jks 
+
+-----> JKS fike password ----->    Expl0re
+
+oc create secret generic dbtruststore-secret --from-file=dbtruststore.jks
+
+
+
+9.   To create a tls secret from tls.crt and tls.key
+-----------------------------------------------------------
+
+oc create secret tls fedex-b2bi-tls --cert=tls.crt --key=tls.key
+
+
+10.     Helm install command
+----------------------------------------------------------------------
+
+nohup helm install b2bicore -f values.yaml ./ibm-b2bi-prod --debug --timeout 7200s &

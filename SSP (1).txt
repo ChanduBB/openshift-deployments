@@ -1,0 +1,300 @@
+
+
+								SSP Installation
+								
+								
+1.	path   :   /opt/FEDEX/SSP/CM/
+
+2.	vi ibm-ssp-cm-secret.yaml
+
+	update  the passwords					Expl0re    RXhwbDByZUAy
+
+			change sysPassphrase and adminPassword  to base64 encoded of Expl0re@2  and else with encoded of Expl0re
+			
+			
+3.	create ns
+
+4.	switch to ns
+
+5.	apply secret yaml file 			pragma-ssp-cm-secret 
+
+6.	edit values.yml
+
+		license : true
+		type : non-prod
+		
+		image:  
+		tag:
+		
+		
+7.	create pull-secret				ssp-cr-secret
+
+	oc create secret  pragma-cr-secret --docker-server=us.icr.io --docker-username=iamapikey --docker-password=9G-FOmu7XT-FEgVmGluFuzyxWOVyJtCxZ5FZYp4kz4VP
+
+		
+		imagesecrets: <pull secret >
+		digest: false
+		
+		keycertexpose: true
+		aliasname: "pragma-sspcm"
+		
+		
+PV:
+
+		storageclass : "px-sharedv4-sc"
+		size: 10Gi
+		accessModes: "ReadWriteMany"
+		
+		
+		
+service:
+
+		type: "ClusterIP"
+		
+		
+secret:
+
+		secretname: <secret created>   pragma-ssp-cm-secret
+		
+serviceaccount: true
+
+			--- so its cretaed automatically
+			
+			
+
+resources:
+
+limits:
+ 
+ 
+4000m
+4Gi
+5Gi
+
+requests:
+
+2000m
+2Gi
+3Gi
+
+
+
+affinity:
+
+nodeaffinity:
+	requiredDuring:
+		- nodeselectorterms:    
+			key: ibm-poc-zone
+			values:
+			- non-dmz
+	
+	
+	CM must have non-dmz   
+	
+	
+	
+route:
+
+		enabled : true
+		
+
+8.	copy the metl-keystore.jks file from B2B   to CM  folder  and convert it to .p12 file
+
+	keytool -importkeystore -srckeystore metl-keystore.jks -srcstoretype JKS -deststoretype PKCS12 -destkeystore ssp-keystore.p12
+
+										or
+										
+	oc get secret demo-us-east-1-aa6cf3af2cebdddfc2fa7b1bd9b27227-0000 -n openshift-ingress -o jsonpath="{.data['tls\.key']}" | base64 -d > tls.key
+
+	oc get secret <cluster url > -n openshift-ingress -o jsonpath="{.data['tls\.crt']}" | base64 -d > tls.crt
+
+	openssl pkcs12 -export -out ssp-keystore.p12 -inkey tls.key -in tls.crt -passout pass:Expl0re
+	
+	
+9.
+	
+customcertificate:
+
+		certenabled : true  
+		File: <.p12 file created>
+		Alias: < created while creating jks or p12 alias >
+		keycertfile: defkeyCert.txt
+		
+		
+		
+	customfiles:
+
+			- add the file provided at commonCertFile:
+		
+		
+		
+10.		
+
+		cd /opt/FED-EX/SSP-Nonprod/CM/ibm-ssp-cm/ibm_cloud_pak/pak_extensions/pre-install/clusteradministration
+		
+		oc apply -f ibm-ssp-cm-scc.yaml
+		
+	
+		
+		oc adm policy add-scc-to-user ibm-anyuid-scc system:serviceaccount:ssp:pragma-ssp-ibm-ssp-cm-serviceaccount
+		oc adm policy add-scc-to-user ibm-anyuid-hostaccess-scc system:serviceaccount:ssp:pragma-ssp-ibm-ssp-cm-serviceaccount
+		oc adm policy add-scc-to-user ibm-privileged-scc system:serviceaccount:ssp:pragma-ssp-ibm-ssp-cm-serviceaccount
+		oc adm policy add-scc-to-user ibm-ssp-cm-scc   system:serviceaccount:pragma-ssp-ibm-ssp-cm-serviceaccount   ---   enough to have this and above all optional
+
+
+
+From The CM folder 
+
+	
+	helm install poc-ssp   -f values.yaml  <charts> --debug
+	
+	oc get po
+	
+	oc rsh <podname>
+	
+	ls
+	
+	copy defkeyCert.txt  to the server Engine folder
+	
+	
+	
+	
+
+
+
+			*****   Engine    ******
+	
+	
+	
+	
+1.  cd Engine
+
+2.	tar tgz file
+
+3.	cd ibm-ssp-engine
+
+4.	cp values.yaml to Engine
+
+5.	cd pak_extensions/pre-install/secret
+
+6. 	vi secret yaml file
+
+		provide the same base64 encoded password  and name to  fedex in palce of IBM similar to CM 
+
+7.	oc apply -f yaml
+
+
+	from Engine folder
+
+	oc create secret generic  ssp-commoncert-secret  --from-file=defkeyCert.txt
+
+
+8.	values.yaml
+
+
+				licence : true
+				type : nonprod
+
+				iamge: us.icr.io/ssp-mft/ibm-ssp-engine/ssp-engine-docker-image
+				tag: 6.0.3.0.04
+
+				digest : false
+
+
+				secret:  < same pull secret of CM >
+
+
+				engineArgs:
+				  
+				  aliasname : same as CM
+				  
+				  
+				  PV:
+				  
+				  staorageclass : "nfs" or any other like portworx
+				  
+				  size: 10Gi
+				  accessModes: ReadWriteMany
+				  
+				  
+				  
+				  service: 
+				  
+					type: "ClusterIP"
+					
+					
+					service2:
+					
+					type: Loadbalancer
+					
+				  ports:
+					- name: sftp
+					  port: 20422
+					  nodePort: 31109
+					- name: https
+					  port: 20443
+					  nodePort: 31911
+					- name: ftps
+					  port: 20421
+					  nodePort: 31917
+					- name: pem
+					  port: 29443
+					  nodePort: 32268
+				 
+
+
+				secretname: pragma-ssp-engine-secret  < created using file >
+				
+				keycertsecret: ssp-commoncert-secret    < generic with def file >
+
+
+				serviceaccount:
+				 create: false
+				 name : same sa used by CM 
+				 
+				 resources:
+				 
+				 limits:
+				 
+				 4
+				 8
+				 6
+				 
+				 requests:
+				 
+				 3
+				 4
+				 4
+				 
+				 
+				 
+				 				 
+				 customcertificate:
+				 			 
+				 commonkeycertfile:  "defkeycert.txt"
+				 
+				 
+				 nodeaffinity:
+				 
+				 key: ibm-poc-zone
+				 values:
+				 - dmz
+				 
+				 Engine must be in dmz
+				 
+
+basic errors:
+				 
+1.		 if any array and object error 
+				 
+			 cd ibm-ssp-engine 
+			 
+			 vi values.schma.json
+				 
+			628 : change array to object 
+						
+						
+2.  Pull secret mismatch mounting verify  in the statefulset wheather it mounted the same which provided and update if mismatch  else add the column if not present
+
+3.  defCert.txt might not be mounted to the path in the pod then run  a debug pod  and copy the file into the specific path /spinstall/resources and restart the pods
+

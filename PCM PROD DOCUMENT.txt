@@ -1,0 +1,212 @@
+ 
+1. pull the image and tag and PUSH.
+--------------------------------------
+
+
+
+
+2. We have to deploy the PCM in the namespace of SI.
+
+pull secret
+
+prod enable : true    nonprod we have to keep false
+
+ssl enabled: true    nonprod we have to keep false
+
+
+com.pe.pcm.config.database.dialect.DB2ExtendedDialect
+
+https://api.fdx-prodution-metl-cluste-c8f3f6cfbb0cdb5823c0b6637406824e-i000.us-east.containers.appdomain.cloud/B2BAPIs/svc
+
+
+
+
+
+1. Go to values.yaml file of PCM and start editing from Communitymanager
+===========================================================================
+
+2. place install as true
+==========================
+
+3. repository image:
+----------------------
+1. Pull the image from registry
+
+     docker pull us.icr.io/<My_namespace>/<my_repo>:<my_tag>
+
+2. Tag an image to point to this registry. Choose a local image, target namespace, and target repository and an optional tag.
+
+     docker tag <local_image> us.icr.io/<my_namespace>/<my_repo>:<my_tag>
+	 
+3.  Push the tagged image.	
+
+     docker push us.icr.io/<my_namespace>/<my_repo>:<my_tag> 
+	 
+	 
+4. Now create a PULL Secret for the image.
+--------------------------------------------
+
+This secret is same as SI secret, because we use same namespace of SI and same Schema of SI.
+
+oc create secret docker-registry fedex-cr-secret --docker-server=us.icr.io --docker-username=iamapikey --docker-password=9G-FOmu7XT-FEgVmGluFuzyxWOVyJtCxZ5FZYp4kz4VP 
+
+5. Enable prod as true
+---------------------------
+
+6. ssl enabled is true and create a metl-keystore.jks file for key_store
+--------------------------------------------------------------------------
+
+from the below command create a metl-keystore.pfx and create a metl-keystore.jks.
+
+echo "Getting tls certificates from openshift" 
+oc get secret $secret -n openshift-ingress -o jsonpath="{.data['tls\.key']}" | base64 -d > tls.key 
+oc get secret $secret -n openshift-ingress -o jsonpath="{.data['tls\.crt']}" | base64 -d > tls.crt 
+echo "creating jks" openssl pkcs12 -export -out metl-keystore.pfx -inkey tls.key -in tls.crt -passout pass:Expl0re 
+keytool -importkeystore -srckeystore metl-keystore.pfx -srcstorepass Expl0re -srcalias 1 -srcstoretype pkcs12 -destkeystore metl-keystore.jks -deststorepass Expl0re -destalias metlkeystore -deststoretype JKS
+
+7. Now create a secret for the metl-keystore.jks
+=====================================================
+
+oc create  secret generic pcm-prod-secret --from-file= metl-keystore.jks
+
+
+8. now apply the app-secrets-pcm-dev.yaml file with the below command:
+-----------------------------------------------------------------------
+
+DB Details:
+================
+
+
+b2bicore   UHJhZ21hQDEyMzQ1Njc4OQo=    Pragma@123456789
+
+DB HOST:   166.9.20.140     46d92b8f-81e6-4c61-bb2b-a6f9e67170b5.bs2ipa7w0uv9tsomi9ig.private.databases.appdomain.cloud
+DB Port:   30172
+
+
+
+oc apply -f app-secrets-pcm-dev.yaml
+
+Now a secret will be created as the name which we give in the file.
+
+Place the name at the ------> key_store_password column
+
+And place the key_store_type as JKS.
+
+
+9. compression enable it as true.
+--------------------------------
+
+10. Place the liquibase enabled: true
+--------------------------------------
+
+Now give the insert type as com.zaxxer.hikari.HikariDataSource
+
+then place the url with the jdbc db2 url of DB2 : jdbc:db2://46d92b8f-81e6-4c61-bb2b-a6f9e67170b5.bs2ipa7w0uv9tsomi9ig.private.databases.appdomain.cloud:30172/BLUDB:sslConnection=true;
+
+username: (Schema name same as SI)
+
+dbpassword: this will be same as the secret name, which is created with applying of app-secrets-pcm-dev.yaml.
+
+driver_class_name: com.ibm.db2.jcc.DB2Driver
+
+connection_timeout: 60000 
+
+
+11. ssl enabled: true 
+------------------------
+ 
+ Now create a trust_store with the DB certificate with the below command.
+ 
+ ---> keytool -import -alias DBCERT -file DigiCertGlobalRootCA.crt -keystore proddbtruststore.jks
+ 
+ --> Give the truststore.jks name which is created by the above command.
+ 
+ Now create a secret from the truststore.jks with the below command.
+ 
+ oc create secret generic dbtruststore-secret --from-file=dbtruststore.jks
+ 
+ Now place the truststore type as JKS.
+ 
+ Now place the trust_store_cmks as the secret name, which is created with applying of app-secrets-pcm-dev.yaml.
+ 
+ 
+12. jpa:
+       show_sql: true.
+	   database_platform: com.pe.pcm.config.database.dialect.DB2ExtendedDialect  #Default value
+          properties:
+            id:
+              new_generator_mappings: true #Default value is true
+          hibernate:
+            naming:
+              physical_strategy: com.pe.pcm.config.database.PhysicalNamingStrategy
+			  
+
+13. Next at the mail stanza 
+
+    host: smtp.hostname.com
+          port: 587 #25
+          username: UserName@company.com #Specify the username exmaple: username@compnay.com
+          cmks: pcm-prod-appsecret #Provde the password secret     (as the secret name, which is created with applying of app-secrets-pcm-dev.yaml.)
+		  
+14. mail:
+              smtp:
+                auth: true #If you want to send a mail with ssl authentication then make it as true or elase false
+                starttls:
+                  enable: true #If you want to send a mail with ssl authentication then make it as true or else false
+                ssl:
+                  trust: "*"
+
+
+15.  login:
+        sm:
+          enable: false #If the customer has Siteminder login then make it as true or else false
+          param_name: SM_USER #Provide the username
+        max_false_attempts: 5 #Maximum attempts
+        reset_false_attempts: 3 #Minutes
+        user_cmks_expire: 30 #days
+      basic:
+        auth:
+          username: pemuser #Specifythe user name
+          cmks: pcm-prod-appsecret #specify the secret       (as the secret name, which is created with applying of app-secrets-pcm-dev.yaml.)
+		  
+16. place the same secret name where cmks is present (as the secret name, which is created with applying of app-secrets-pcm-dev.yaml.)
+
+
+17. place b2bi_api:
+                active : true.
+				
+18. Now at the API stanza 
+--------------------------------
+
+username: cm_user
+password: (as the secret name, which is created with applying of app-secrets-pcm-dev.yaml.)
+baseurl: https://(cluster URL)/B2BAPIs/svc          ---------------->       This url will be there at the SI routes of API/svc
+
+
+19. now the  sfg_api: #IBM V6 SFG API config
+            active: true
+            api:
+              username: cm_user
+              cmks: pcm-prod-appsecret         ------------->     (as the secret name, which is created with applying of app-secrets-pcm-dev.yaml.)
+              baseUrl: https://api.fdx-prodution-metl-cluste-c8f3f6cfbb0cdb5823c0b6637406824e-i000.us-east.containers.appdomain.cloud/sfgapis
+
+20. Rest keep all of them as false for PEM.
+
+21. Now at the replica count: 1
+-------------------------------------
+
+Autoscaling enabled: false
+
+And  hostname: pcm-prod.fdx-prodution-metl-cluste-c8f3f6cfbb0cdb5823c0b6637406824e-i000.us-east.containers.appdomain.cloud 
+
+archive : 
+   enable: true
+   
+   pvc name: b2bcore-prod-b2bi-documents
+   
+
+22. Now keep all the nonprod enabled as false.
+=====================================================
+
+nohup helm install <release name> -f <values.yaml> ./<package name> --debug --timeout 7200s &
+

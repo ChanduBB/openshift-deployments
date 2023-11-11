@@ -1,0 +1,17 @@
+To copy a file which is in a pod to local OS:
+-------------------------------------------------
+oc rsync python-redelivery-5fbc554f7b-d7cf5:/opt/webhooks/first_basic_redelivery.log .
+
+To copy a file from pod to local being in local linux:
+oc cp podname:/path in pod /home/chandu/filename
+
+copying from local to pod:
+oc cp filename podname:/path/to/pod
+
+To create a image pull secret:
+------------------------------------
+oc create secret  docker-registry fdx-itx-secret  --docker-server=us.icr.io --docker-username=iamapikey  --docker-password=mduBF1C5xs66oRhftoACZt6_4dcbpJR1hYjbuw7D6HkY
+
+To debug a node:
+-----------------
+oc debug node/172.30.154.13

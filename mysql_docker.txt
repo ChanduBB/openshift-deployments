@@ -1,0 +1,82 @@
+Running mysql on docker container and acessing the DB UI:
+=========================================================
+
+Login to the appropriate server and install docker. (centos)
+
+To install Docker use below commands: (user must have root privileges):
+--------------------------------------------------------------------------
+yum install -y yum-utils device-mapper-persistent-data lvm2
+yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+yum install docker -y
+systemctl start docker
+systemctl enable docker
+
+Pull mysql docker image from dockerhub:
+------------------------------------------
+
+docker pull mysql:latest
+
+Run the container with detached mode using mysql image:
+Note: mysql uses default port as 3306 and this port should be enabled in server SG:
+---------------------------------------------------------------------------------------
+
+docker run -d --name=mysql-server -p 3306:3306 -e MYSQL_ROOT_PASSWORD=desiredpassword mysql:latest
+
+verify the container status, it should be in running status:
+--------------------------------------------------------------
+docker ps
+
+get the mysql container IP address:
+-------------------------------------
+Note: replace the container_id with actualcontainerid or name and you can find the private ip of container at the end with name of "IPAddress" and copy the IP
+
+docker inspect container_id
+
+enter inside the docker container:
+------------------------------------
+
+docker exec -it containe_id /bin/bash
+
+To connect to mysql DB being in docker container:
+----------------------------------------------------
+mysql -h 172.30.18.4 -u root -p
+
+Note: In the above command replace the 172.30.18.4 with your container IP and -u referes user and -p refers to password you have given while running the container
+
+You will connect to mysql from backend.
+
+exit from the container and Pull the phpyadmin image from dockerhub:
+-------------------------------------------------------------------
+
+docker pull phpmyadmin
+docker run -d --name=phpmyadmincontainer -p 8080:80 -e PMA_ARBITRARY=1 phpmyadmin
+
+To access phpmyadmin UI from browser:
+---------------------------
+
+server_public_IP and port of the phpmyadmincontainer:
+35.173.166.147:8080
+
+To connect to mysql database suing phpmyadmin UI:
+
+IP: IP of mysql container
+username: root
+Password: password_you_have_given_while_running_mysql_container
+
+Note: The ports should be allowed in the instance Security Group then only we can access the UI
+
+ 
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+

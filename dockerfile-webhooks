@@ -1,0 +1,14 @@
+FROM registry.access.redhat.com/ubi8/python-38:latest
+USER root
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+RUN yum install -y iputils java
+RUN mkdir -p /opt/webhooks/configfiles/PR/
+RUN mkdir -p /opt/webhooks/logs/
+ADD config /opt/webhooks/configfiles/
+ADD PR /opt/webhooks/configfiles/PR/
+RUN chmod -R 777 /opt/webhooks/configfiles/
+RUN chmod -R 766 /opt/webhooks/logs/
+WORKDIR /opt/webhooks/configfiles/
+ENV APP $?
+ENTRYPOINT ["/opt/webhooks/configfiles/runcontainer.sh"]

@@ -255,9 +255,15 @@ oc create  secret generic b2bcore-jms-truststore-secret --from-file= proddbtrus
 
 
 
-------> To create a JKS file  
+------> To create a JKS file 
 
-keytool -import -alias DBCERT -file DigiCertGlobalRootCA.crt -keystore proddbtruststore.jks 
+wget https://www.digicert.com/CACerts/DigiCertGlobalRootCA.crt
+ 
+keytool -import -alias DBCERT -file DigiCertGlobalRootCA.crt -keystore proddbtruststore.jks
+
+for tls secret for application secure--->>>  oc create secret tls b2bi-demo-tls --cert=tls.crt --key=tls.key -n test
+ 
+
 
 -----> JKS fike password ----->    Expl0re
 
@@ -275,3 +281,20 @@ oc create secret tls fedex-b2bi-tls --cert=tls.crt --key=tls.key
 ----------------------------------------------------------------------
 
 nohup helm install b2bicore -f values.yaml ./ibm-b2bi-prod --debug --timeout 7200s &
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
